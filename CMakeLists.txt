@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 #enable_language (C Fortran)
+set(CMAKE_FORCE_C_COMPILER clang)
 project (mixer)
 set(SOURCES mixer.c)
 link_directories(~/ressources/freesteam-2.1)
