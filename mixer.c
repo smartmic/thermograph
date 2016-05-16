@@ -17,18 +17,28 @@ int mixer_f (const gsl_vector * x, void *params,
               gsl_vector * f)
 {
   double m[4];
-  memcpy(m,((struct rparams *) params)->m,sizeof(m));
   double t[4]; 
+  double p[4]; 
+  double h[4]; 
+  memcpy(m,((struct rparams *) params)->m,sizeof(m));
   memcpy(t,((struct rparams *) params)->t,sizeof(t));
+  memcpy(p,((struct rparams *) params)->p,sizeof(p));
+  memcpy(h,((struct rparams *) params)->h,sizeof(h));
 
-  const double x0 = gsl_vector_get (x, 0);
-  const double x1 = gsl_vector_get (x, 1);
+  int i;
+  double X[2];
+  double Y[2];
 
-  const double y0 = m[0] * (1 - x0);
-  const double y1 = t[0] * (x1 - x0 * x0);
+  for (i=0;i<=1;i++) {
+      X[i] = gsl_vector_get (x, i);
+  }
 
-  gsl_vector_set (f, 0, y0);
-  gsl_vector_set (f, 1, y1);
+  Y[0] = m[0] * (1 - X[0]);
+  Y[1] = t[0] * (X[1] - X[0] * X[0]);
+
+  for (i=0;i<=1;i++) {
+      gsl_vector_set (f, i, Y[i]);
+  }
 
   return GSL_SUCCESS;
 }
@@ -42,7 +52,7 @@ int main (void)
   size_t i, iter = 0;
 
   const size_t n = 2;
-  struct rparams p = {1.0,1.0,1.0,1.0, 10.0, 10.0, 10.0, 10.0};
+  struct rparams p = {1.0, 1.0, 1.0, 1.0, 10.0, 10.0, 10.0, 10.0};
   gsl_multiroot_function f = {&mixer_f, n, &p};
 
   double x_init[2] = {-10.0, -5.0};
