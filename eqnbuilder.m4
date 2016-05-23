@@ -11,11 +11,45 @@ pushdef(`out',$1)dnl
 include(eqnlib.m4)dnl
 divert(0)dnl
 dnl WRITE EQNS BEGINNING FROM NEXT LINE…
-include(model.m4)dnl
-include(flags.m4)dnl
-dnl steamtable lookups {{{1
-forloop(`i',1,counterN,`SteamState S = freesteam_set_pT(X[eval(( i-1)*4+1)]*1e5, X[eval(( i-1)*4+3)]+273.15);
-Y[countY] = freesteam_set_pT(S)/1e3 - X[eval(( i-1)*4+2)] 
+struct rparams
+{
+  double `m'[counterN];
+  double `p'[counterN];
+  double `t'[counterN];
+};
 
+int model_f (const gsl_vector * x, void *params, gsl_vector * f)
+{
+
+  double `m'[counterN];
+  double `p'[counterN];
+  double `t'[counterN];
+  memcpy(`m',((struct rparams *) params)->`m', sizeof(`m')); 
+  memcpy(`p',((struct rparams *) params)->`p', sizeof(`p')); 
+  memcpy(`t',((struct rparams *) params)->`t', sizeof(`t')); 
+
+  int i;
+
+  double X[eval(counterN*4)];
+  double Y[eval(counterN*4)];
+  for (i=0; i<eval(counterN*4); i++) {
+    X[i] = gsl_vector_get (x, i);
+  }
+
+  // START OF EQNS
+include(model.m4)dnl
+dnl steamtable lookups {{{1
+forloop(`i',1,counterN,`  SteamState S`'i`' = freesteam_set_pT(X[p( i)]*1e5, X[t( i)]+273.15);
+  Y[countY] = freesteam_h(S`'i`')/1e3 - X[h( i)];
 ')dnl
+
 dnl }}}1
+include(flags.m4)dnl
+  // END OF EQNS
+
+  for (i=0; i<eval(counterN*4); i++) {
+    gsl_vector_set (f, i, Y[i]);
+  }
+
+  return GSL_SUCCESS;
+}
