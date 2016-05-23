@@ -30,24 +30,18 @@ int model_f (const gsl_vector * x, void *params, gsl_vector * f)
 
   int i;
 
-  double X[eval(counterN*4)];
-  double Y[eval(counterN*4)];
-  for (i=0; i<eval(counterN*4); i++) {
+  double X[eval(counterN*3)];
+  double Y[eval(counterN*3)];
+  for (i=0; i<eval(counterN*3); i++) {
     X[i] = gsl_vector_get (x, i);
   }
 
   // START OF EQNS
 include(model.m4)dnl
-dnl steamtable lookups {{{1
-forloop(`i',1,counterN,`  SteamState S`'i`' = freesteam_set_pT(X[p( i)]*1e5, X[t( i)]+273.15);
-  Y[countY] = freesteam_h(S`'i`')/1e3 - X[h( i)];
-')dnl
-
-dnl }}}1
 include(flags.m4)dnl
   // END OF EQNS
 
-  for (i=0; i<eval(counterN*4); i++) {
+  for (i=0; i<eval(counterN*3); i++) {
     gsl_vector_set (f, i, Y[i]);
   }
 

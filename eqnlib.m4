@@ -11,8 +11,7 @@ dnl }}}2
 dnl node lookup table {{{2
 define(m,`eval'($1-1))
 define(p,`eval'(counterN*1+$1-1))
-define(t,`eval'(counterN*2+$1-1))
-define(h,`eval'(counterN*3+$1-1))
+define(h,`eval'(counterN*2+$1-1))
 dnl }}}2
 dnl }}}1
 dnl component definitions {{{1
@@ -33,6 +32,7 @@ dnl }}}1
 dnl boundary conditions {{{1
 define(force,`ifelse($2,m,`  Y[countY] = X[m($1)] - `m'[eval($1-1)];
 ')ifelse($3,p,`  Y[countY] = X[p($1)] - `p'[eval($1-1)];
-')ifelse($4,t,`  Y[countY] = X[t($1)] - `t'[eval($1-1)];
+')ifelse($4,t,`  SteamState S`'eval($1-1) = freesteam_set_pT(X[p($1)]*1e5, `t'[eval($1-1)]+273.15);
+  Y[countY] = X[h($1)] - freesteam_h(S`'eval($1-1))/1e3; 
 ')ifelse($5,h,`  Y[countY] = X[h($1)] - `h'[eval($1-1)];')')dnl
 dnl }}}1
