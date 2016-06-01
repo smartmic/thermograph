@@ -40,35 +40,17 @@
   (lambda (key)
     (car (assoc-ref xmap key))))
 
-(define m-in
-  (lambda (n)
-    (display (string-concatenate (list " + X[" (number->string n) "]")))))
+(define x-io
+  (lambda (node sign param)
+    (let ((i 0))
+      (cond 
+        [(string=? param "m") (set! i 0)]
+        [(string=? param "p") (set! i 1)]
+        [(string=? param "h") (set! i 2)])
+      (display 
+        (string-concatenate 
+          (list (string sign) "X[" (number->string (+ i node)) "]"))))))
 
-(define m-out
-  (lambda (n)
-    (display (string-concatenate (list " - X[" (number->string n) "]")))))
-
-(define p-in
-  (lambda (n)
-    (display (string-concatenate (list " + X[" (number->string (+ n 1)) "]")))))
-
-(define p-out
-  (lambda (n)
-    (display (string-concatenate (list " - X[" (number->string (+ n 1)) "]")))))
-
-(define h-in
-  (lambda (n)
-    (display (string-concatenate 
-               (list 
-                 " + X[" (number->string n) 
-                 "] * X[" (number->string (+ n 2)) "]")))))
-
-(define h-out
-  (lambda (n)
-    (display (string-concatenate 
-               (list 
-                 " - X[" (number->string n) 
-                 "] * X[" (number->string (+ n 2)) "]")))))
 (define Y
   (lambda ()
     (set! eqno (1+ eqno))
@@ -77,47 +59,57 @@
       (string-concatenate (list 
        "Y[" (number->string eqno) "] = ")))))
 
+(define paramptr
+  (lambda (x node)
+      (display (string-concatenate (list
+        " - " x "[" (number->string node) "]")))))
+
 (define extract
-  (lambda (bound)
-    (let ((node (car bound)))
+  (lambda (blist) 
+    (let ((node (car blist)))
       (for-each 
-            (lambda (x) 
-              (set! x (symbol->string x))
-              (if (string=? x "m")
-                (begin (Y) (m-in (x-get node)) 
-                  (display (string-concatenate (list
-                    " - " x "[" (number->string (x-get node)) "]")))))
-              (if (string=? x "p")
-                (begin (Y) (p-in (x-get node)) 
-                  (display (string-concatenate (list
-                    " - " x "[" (number->string (+ 1 (x-get node))) "]")))))
-              (if (string=? x "t")
-                (begin (Y) (h-in (x-get node)) 
-                  (display (string-concatenate (list
-                    " - " x "[" (number->string (+ 2 (x-get node))) "]"))))))
-            (cdr bound)))))
+        (lambda (x) 
+          (set! x (symbol->string x))
+          (cond
+            [(string=? x "m") (begin 
+                (Y) (x-io (x-get node) #\+ "m") (paramptr x (x-get node)))]
+            [(string=? x "p") (begin
+                (Y) (x-io (x-get node) #\+ "p") (paramptr x (x-get node)))]
+            [(string=? x "t") (begin
+                (Y) (x-io (x-get node) #\+ "h") (paramptr x (x-get node)))]))
+        (cdr blist)))))
 
 (define-syntax valve
   (syntax-rules ()
-        ((_ media upstream downstream p)
-         (begin 
-           (populate-x (list upstream downstream))
-           (Y) (m-in (x-get upstream)) (m-out (x-get downstream))
-           (Y) (h-in (x-get upstream)) (h-out (x-get downstream))
-           (Y) (p-in (x-get upstream)) 
-               (display " * ") (display (number->string p))
-               (p-out (x-get downstream))
-           (newline)))))
+    ((_ media upstrm downstrm prm)
+     (begin 
+       (populate-x (list upstrm downstrm))
+       (Y) (x-io (x-get upstrm) #\+ "m") (x-io (x-get downstrm) #\- "m")
+       (Y) (x-io (x-get upstrm) #\+ "h") (x-io (x-get downstrm) #\- "h")
+       (Y) (x-io (x-get upstrm) #\+ "p") 
+           (display "*") (display (number->string prm))
+           (x-io (x-get downstrm) #\- "p")
+       (newline)))))
 
 (define-syntax header
   (syntax-rules ()
-        ((_ upstream downstream)
+        ((_ upstrm downstrm)
          (begin
-           (populate-x (append upstream downstream))
-           (Y) (for-each m-in (map x-get upstream)) 
-               (for-each m-out (map x-get downstream))
-           (Y) (for-each h-in (map x-get upstream)) 
-               (for-each h-out (map x-get downstream)) 
+           (populate-x (append upstrm downstrm))
+           (Y) (for-each (lambda (x) (x-io x  #\+ "m")) (map x-get upstrm)) 
+               (for-each (lambda (x) (x-io x  #\- "m")) (map x-get downstrm)) 
+           (for-each (lambda (x) 
+                       (Y) (x-io x #\+ "p") (x-io (x-get (car downstrm)) #\- "p")) 
+                     (map x-get upstrm))
+           (for-each (lambda (x) 
+                       (Y) (x-io (x-get (car downstrm)) #\+ "p") (x-io x #\- "p")) 
+                     (map x-get (cdr downstrm)))
+           (Y) (for-each (lambda (x) 
+                           (x-io x  #\+ "m")(display "*")(x-io x  #\si  "h")) 
+                         (map x-get upstrm)) 
+               (for-each (lambda (x) 
+                           (x-io x  #\+ "m")(display "*")(x-io x  #\si "h")) 
+                         (map x-get downstrm)) 
            (newline)))))
 
 (define-syntax provide-params
@@ -126,9 +118,12 @@
          (begin
            (for-each extract (list (node var* ...)* ... ))))))
 
-
 (valve ws (in 1) (out 2) (param 0.99)) 
-(header (in '(2 3)) (out '(4)))
+(header (in '(2 3)) (out '(4 5)))
 (provide-params 
    '(1 p m t)
-   '(3 m t))
+   '(3 m t)
+   '(5 m))
+
+(newline)
+(display xmap)
