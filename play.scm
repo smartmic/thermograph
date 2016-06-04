@@ -1,4 +1,4 @@
-#!/usr/bin/guile -s
+#!/usr/bin/guile -s 
 !#
 ;;;coding:utf-8
 
@@ -25,14 +25,13 @@
 (define eqns '())
 (define eqno -1)
 
-;;; setup and populate association list for mapping user node id to C
-;;; index
+;;; setup and populate association list for mapping user node id to 
+;;; X array index
 (define populate-x
   (lambda (lis)
     (for-each (lambda (x) 
                 (if (not (assoc x xmap))
-                  (set! xmap 
-                     (assoc-set! xmap x (list (* 3 (length xmap)) #f)))))
+                (set! xmap( assoc-set! xmap x (list (* 3 (length xmap)) #f)))))
               lis)))
 
 ;;; get internal key (index) from user supplied node id
@@ -42,27 +41,25 @@
 
 ;;; get numbered X node
 (define x-io
-  (lambda (node sign param)
+  (lambda (node param)
     (let ((i 0))
       (cond 
         [(string=? param "m") (set! i 0)]
         [(string=? param "p") (set! i 1)]
         [(string=? param "h") (set! i 2)])
-        (string-concatenate 
-          (list (string sign) "X[" (number->string (+ i node)) "]")))))
+        (string-append "X[" (number->string (+ i node)) "]"))))
 
 ;;; get numbered string for f(x) aka Y[i]
 (define Y
-  (lambda ()
+  (call/cc
+  (lambda (break)
     (set! eqno (1+ eqno))
-      (string-concatenate (list 
-       "\nY[" (number->string eqno) "] = "))))
+      (break (string-append "]" (number->string eqno) "[Y")))))
 
 ;;; get string for parameter node
 (define paramptr
   (lambda (x node)
-      (string-concatenate (list
-        "-" x "[" (number->string node) "]"))))
+      (string-append x "[" (number->string node) "]")))
 
 ;;; Extract equation for boundary conditions
 (define extract
@@ -73,13 +70,15 @@
           (cond
             [(string=? x "m") 
                 (string-append 
-                  (Y) (x-io (x-get node) #\+ "m") (paramptr x (x-get node)))]
+                  (x-io (x-get node) "m") "-" (paramptr x (x-get node)))]
             [(string=? x "p") 
                 (string-append
-                  (Y) (x-io (x-get node) #\+ "p") (paramptr x (x-get node)))]
+                  (x-io (x-get node) "p") "-" (paramptr x (x-get node)))]
             [(string=? x "t") 
                 (string-append 
-                  (Y) (x-io (x-get node) #\+ "h") (paramptr x (x-get node)))]))
+                  (x-io (x-get node) "h") "-"
+                  "h_pT(&"  (x-io (x-get node) "p") ",&"
+                  (paramptr x (x-get node)) ")")]))
         (cdr blist)))))))
 
 ;;; Macro for valve component
@@ -94,14 +93,14 @@
             
            ; mass balance
            (string-append
-             (Y) (x-io (x-get upstrm) #\+ "m") (x-io (x-get downstrm) #\- "m"))
+             (x-io (x-get upstrm) "m") "-" (x-io (x-get downstrm) "m"))
            ; isenthalpic process
            (string-append
-             (Y) (x-io (x-get upstrm) #\+ "h") (x-io (x-get downstrm) #\- "h"))
+             (x-io (x-get upstrm) "h") "-" (x-io (x-get downstrm) "h"))
            ; pressure relation (relative dp by parameter)
            (string-append
-             (Y) (x-io (x-get upstrm) #\+ "p") "*" (number->string prm)
-               (x-io (x-get downstrm) #\- "p")))))))))
+             (x-io (x-get upstrm) "p") "*" (number->string prm) "-"
+               (x-io (x-get downstrm) "p")))))))))
 
 ;;; Macro for header component (multi-mixer-splitter)
 (define-syntax header
@@ -116,39 +115,40 @@
             (list (string-concatenate (append
 
              ; mass balance
-             (list (Y))
-                   (map (lambda (x) (x-io x  #\+ "m")) (map x-get upstrm)) 
-                   (map (lambda (x) (x-io x  #\- "m")) (map x-get downstrm)))))
+             (map (lambda (x) 
+                    (string-append "+" (x-io x "m"))) (map x-get upstrm)) 
+             (map (lambda (x) 
+                    (string-append "-" (x-io x "m"))) (map x-get downstrm)))))
 
              ; pressure identity (part 1): pressure of all inflow
              ; states equals the pressure of the first outflow state
              (map (lambda (x) 
                (string-append
-                   (Y) (x-io x #\+ "p") (x-io (x-get (car downstrm)) #\- "p")))
+                   "+" (x-io x "p") "-" (x-io (x-get (car downstrm)) "p")))
              (map x-get upstrm))
 
              ; pressure identity (part 2): the pressure of all outflow
              ; states is equal
              (map (lambda (x) 
                (string-append
-                   (Y) (x-io (x-get (car downstrm)) #\+ "p") (x-io x #\- "p")))
+                   "+" (x-io (x-get (car downstrm)) "p") "-" (x-io x "p")))
              (map x-get (cdr downstrm)))
 
              ; enthalpy identity: the enthalpy of all outflow states
              ; is equal
              (map (lambda (x) 
                (string-append
-                   (Y) (x-io (x-get (car downstrm)) #\+ "h") (x-io x #\- "h")))
+                   "+" (x-io (x-get (car downstrm)) "h") "-" (x-io x "h")))
              (map x-get (cdr downstrm)))
 
              ; energy balance
-             (list (string-concatenate (append (list (Y))
+             (list (string-concatenate (append
                (map (lambda (x) 
-                   (string-append (x-io x  #\+ "m") "*" (x-io x  #\si  "h")))
+                   (string-append "+" (x-io x "m") "*" (x-io x "h")))
                      (map x-get upstrm)) 
                (map (lambda (x) 
-                   (string-append (x-io x  #\- "m") "*" (x-io x  #\si "h")))
-                     (map x-get downstrm))))))))) )))
+                   (string-append "-" (x-io x "m") "*" (x-io x "h")))
+                     (map x-get downstrm))))) )))))))
 
 ;;; Macro for injecting boundary conditions into system
 (define-syntax provide-params
@@ -157,7 +157,7 @@
          (begin
            (for-each extract (list (node var* ...)* ... ))))))
 
-;;; Customized model definition (using specific DSL)
+;;; Customized model definition 
 (valve ws (in 1) (out 2) (param 0.99)) 
 (header (in '(2 3)) (out '(4 5)))
 (provide-params 
@@ -166,8 +166,13 @@
    '(5 m))
    
 
-;;; Runtime outputs
-(display (length eqns))
-(display eqns)
+;;; Outputs
+(for-each
+  (lambda (lhs rhs) (display (string-append lhs rhs)))
+    (map 
+      (lambda (x) 
+        (string-append "\nY[" (number->string x) "]=")) (iota (length eqns)))
+    eqns)
 (newline)
-(display xmap)
+
+;(display xmap)
