@@ -2,7 +2,7 @@
 CC = gcc
 
 CFLAGS = -Wall -O
-LIBS = -L/home/martin/ressources/freesteam-2.1 -rdynamic -lgsl -lgslcblas -lm -lfreesteam -Wl,-rpath,/home/martin/ressources/freesteam-2.1
+LIBS = -L. -lsteam97 -L/home/martin/ressources/freesteam-2.1 -rdynamic -lgsl -lgslcblas -lm -lfreesteam -Wl,-rpath,/home/martin/ressources/freesteam-2.1
 INC = -I. -I/home/martin/ressources/freesteam-2.1
 
 .PHONY: clean build run prepare
@@ -21,7 +21,5 @@ thermograph: thermograph.o
 thermograph.o: thermograph.c
 	$(CC) -pg -c $< -o $@ $(CFLAGS) $(INC)
 
-thermograph.c: model_f.h
+thermograph.c: model_f.h ws_table.h
 
-model_f.h: 
-	m4 eqnbuilder.m4 > model_f.h

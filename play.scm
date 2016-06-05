@@ -23,7 +23,6 @@
 (define param (lambda (n) n))
 (define xmap '())
 (define eqns '())
-(define eqno -1)
 
 ;;; setup and populate association list for mapping user node id to 
 ;;; X array index
@@ -40,7 +39,7 @@
     (car (assoc-ref xmap key))))
 
 ;;; get numbered X node
-(define x-io
+(define X_i
   (lambda (node param)
     (let ((i 0))
       (cond 
@@ -48,13 +47,6 @@
         [(string=? param "p") (set! i 1)]
         [(string=? param "h") (set! i 2)])
         (string-append "X[" (number->string (+ i node)) "]"))))
-
-;;; get numbered string for f(x) aka Y[i]
-(define Y
-  (call/cc
-  (lambda (break)
-    (set! eqno (1+ eqno))
-      (break (string-append "]" (number->string eqno) "[Y")))))
 
 ;;; get string for parameter node
 (define paramptr
@@ -70,15 +62,15 @@
           (cond
             [(string=? x "m") 
                 (string-append 
-                  (x-io (x-get node) "m") "-" (paramptr x (x-get node)))]
+                  (X_i (x-get node) "m") "-" (paramptr x (/ (x-get node) 3)))]
             [(string=? x "p") 
                 (string-append
-                  (x-io (x-get node) "p") "-" (paramptr x (x-get node)))]
+                  (X_i (x-get node) "p") "-" (paramptr x (/ (x-get node) 3)))]
             [(string=? x "t") 
                 (string-append 
-                  (x-io (x-get node) "h") "-"
-                  "h_pT(&"  (x-io (x-get node) "p") ",&"
-                  (paramptr x (x-get node)) ")")]))
+                  (X_i (x-get node) "h") "-"
+                  "h_pT(&"  (X_i (x-get node) "p") ",&"
+                  (paramptr x (/ (x-get node) 3)) ")")]))
         (cdr blist)))))))
 
 ;;; Macro for valve component
@@ -93,14 +85,14 @@
             
            ; mass balance
            (string-append
-             (x-io (x-get upstrm) "m") "-" (x-io (x-get downstrm) "m"))
+             (X_i (x-get upstrm) "m") "-" (X_i (x-get downstrm) "m"))
            ; isenthalpic process
            (string-append
-             (x-io (x-get upstrm) "h") "-" (x-io (x-get downstrm) "h"))
+             (X_i (x-get upstrm) "h") "-" (X_i (x-get downstrm) "h"))
            ; pressure relation (relative dp by parameter)
            (string-append
-             (x-io (x-get upstrm) "p") "*" (number->string prm) "-"
-               (x-io (x-get downstrm) "p")))))))))
+             (X_i (x-get upstrm) "p") "*" (number->string prm) "-"
+               (X_i (x-get downstrm) "p")))))))))
 
 ;;; Macro for header component (multi-mixer-splitter)
 (define-syntax header
@@ -116,38 +108,38 @@
 
              ; mass balance
              (map (lambda (x) 
-                    (string-append "+" (x-io x "m"))) (map x-get upstrm)) 
+                    (string-append "+" (X_i x "m"))) (map x-get upstrm)) 
              (map (lambda (x) 
-                    (string-append "-" (x-io x "m"))) (map x-get downstrm)))))
+                    (string-append "-" (X_i x "m"))) (map x-get downstrm)))))
 
              ; pressure identity (part 1): pressure of all inflow
              ; states equals the pressure of the first outflow state
              (map (lambda (x) 
                (string-append
-                   "+" (x-io x "p") "-" (x-io (x-get (car downstrm)) "p")))
+                   "+" (X_i x "p") "-" (X_i (x-get (car downstrm)) "p")))
              (map x-get upstrm))
 
              ; pressure identity (part 2): the pressure of all outflow
              ; states is equal
              (map (lambda (x) 
                (string-append
-                   "+" (x-io (x-get (car downstrm)) "p") "-" (x-io x "p")))
+                   "+" (X_i (x-get (car downstrm)) "p") "-" (X_i x "p")))
              (map x-get (cdr downstrm)))
 
              ; enthalpy identity: the enthalpy of all outflow states
              ; is equal
              (map (lambda (x) 
                (string-append
-                   "+" (x-io (x-get (car downstrm)) "h") "-" (x-io x "h")))
+                   "+" (X_i (x-get (car downstrm)) "h") "-" (X_i x "h")))
              (map x-get (cdr downstrm)))
 
              ; energy balance
              (list (string-concatenate (append
                (map (lambda (x) 
-                   (string-append "+" (x-io x "m") "*" (x-io x "h")))
+                   (string-append "+" (X_i x "m") "*" (X_i x "h")))
                      (map x-get upstrm)) 
                (map (lambda (x) 
-                   (string-append "-" (x-io x "m") "*" (x-io x "h")))
+                   (string-append "-" (X_i x "m") "*" (X_i x "h")))
                      (map x-get downstrm))))) )))))))
 
 ;;; Macro for injecting boundary conditions into system
@@ -167,12 +159,48 @@
    
 
 ;;; Outputs
+(display (string-append "
+double h_pT(double *, double *);
+
+struct rparams
+{
+    double m["(number->string (length xmap))"];
+    double p["(number->string (length xmap))"];
+    double t["(number->string (length xmap))"];
+};
+
+int model_f (const gsl_vector * x, void * params, gsl_vector * f)
+{
+    double m["(number->string (length xmap))"];
+    double p["(number->string (length xmap))"];
+    double t["(number->string (length xmap))"];
+    memcpy(m,((struct rparams *) params)->m, sizeof(m)); 
+    memcpy(p,((struct rparams *) params)->p, sizeof(p)); 
+    memcpy(t,((struct rparams *) params)->t, sizeof(t)); 
+
+    int i;
+    double X["(number->string (length eqns))"];
+    double Y["(number->string (length eqns))"];
+
+    for (i=0; i<"(number->string (length eqns))"; i++) {
+    X[i] = gsl_vector_get (x, i);
+    }
+
+    // START OF EQNS"))
+
 (for-each
-  (lambda (lhs rhs) (display (string-append lhs rhs)))
+  (lambda (lhs rhs) (display (string-append lhs rhs ";")))
     (map 
       (lambda (x) 
-        (string-append "\nY[" (number->string x) "]=")) (iota (length eqns)))
+        (string-append "\n    Y[" (number->string x) "]=")) (iota (length eqns)))
     eqns)
-(newline)
 
-;(display xmap)
+(display (string-append "
+    // END OF EQNS
+
+    for (i=0; i<"(number->string (length eqns))"; i++) {
+    gsl_vector_set (f, i, Y[i]);
+    }
+    
+    return GSL_SUCCESS;
+}"))
