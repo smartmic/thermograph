@@ -3,17 +3,18 @@
 #include <string.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_multiroots.h>
-#include <steam_pT.h>
-#include <steam_ph.h>
 
 #include <model_f.h>
 #include <ws_table.h>
 
 int model_f (const gsl_vector *, void *, gsl_vector *);
 
+double T_ph(double *, double *);
+
 int print_state (size_t iter, gsl_multiroot_fsolver * s)
 {
-  SteamState S = freesteam_set_ph(gsl_vector_get (s->x,13)*1e5, gsl_vector_get (s->x,14)*1e3);
+  double pressure = gsl_vector_get (s->x,13);
+  double enthalpy = gsl_vector_get (s->x,14);
 
   printf ("iter = %3u x = % .3f % .3f % .3f % .3f "
           "T4 = %.3f\n",
@@ -22,7 +23,7 @@ int print_state (size_t iter, gsl_multiroot_fsolver * s)
           gsl_vector_get (s->x, 1),
           gsl_vector_get (s->x, 10),
           gsl_vector_get (s->x, 11),
-          freesteam_T(S)-273.15);
+          T_ph(&pressure,&enthalpy));
 
   return 0;
 }
@@ -50,7 +51,7 @@ int main (void)
       gsl_vector_set (x, i, x_init[i]);
   }
 
-  T = gsl_multiroot_fsolver_hybrids;
+  T = gsl_multiroot_fsolver_dnewton;
   s = gsl_multiroot_fsolver_alloc (T, n);
   gsl_multiroot_fsolver_set (s, &f, x);
 

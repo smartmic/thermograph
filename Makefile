@@ -2,8 +2,8 @@
 CC = gcc
 
 CFLAGS = -Wall -O
-LIBS = -L. -lsteam97 -L/home/martin/ressources/freesteam-2.1 -rdynamic -lgsl -lgslcblas -lm -lfreesteam -Wl,-rpath,/home/martin/ressources/freesteam-2.1
-INC = -I. -I/home/martin/ressources/freesteam-2.1
+LIBS = -L. -lsteam97 -lgsl -lgslcblas -lm 
+INC = -I. 
 
 .PHONY: clean build run prepare
 
