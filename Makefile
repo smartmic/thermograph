@@ -16,10 +16,10 @@ run: thermograph
 	./thermograph
 
 thermograph: thermograph.o
-	$(CC) -pg $< -o $@ $(LIBS) 
+	$(CC) $< -o $@ $(LIBS) 
 
 thermograph.o: thermograph.c
-	$(CC) -pg -c $< -o $@ $(CFLAGS) $(INC)
+	$(CC) -c $< -o $@ $(CFLAGS) $(INC)
 
-thermograph.c: model_f.h ws_table.h
+thermograph.c: model_f.h model_df.h ws_table.h
 
