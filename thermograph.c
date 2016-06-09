@@ -5,12 +5,12 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_multiroots.h>
 
-#include <model_f.h>
-#include <model_df.h>
+#include <model_fdf.h>
 #include <ws_table.h>
 
 int model_f (const gsl_vector *, void *, gsl_vector *);
 int model_df (const gsl_vector *, void *, gsl_matrix *);
+int model_fdf (const gsl_vector *, void *, gsl_vector *, gsl_matrix *);
 
 double T_ph(double *, double *);
 

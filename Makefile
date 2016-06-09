@@ -21,5 +21,5 @@ thermograph: thermograph.o
 thermograph.o: thermograph.c
 	$(CC) -c $< -o $@ $(CFLAGS) $(INC)
 
-thermograph.c: model_f.h model_df.h ws_table.h
+thermograph.c: model_fdf.h ws_table.h
 
