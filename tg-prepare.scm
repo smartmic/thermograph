@@ -5,13 +5,8 @@
 ;;; Use UTF-8 
 (setlocale LC_ALL "")
 (use-modules (ice-9 regex))
+(use-modules (srfi srfi-1))
 
-;;; util procedures
-(define (reduce fn base-value lis)
-  (if (null? lis)
-    base-value
-    (fn (car lis)
-        (reduce fn base-value (cdr lis)))))
 
 ;;; various definitions
 (define ws "water")
@@ -32,13 +27,19 @@
   (lambda (lis)
     (for-each (lambda (x) 
                 (if (not (assoc x xmap))
-                (set! xmap( assoc-set! xmap x (list (* 3 (length xmap)) #f)))))
+                (set! xmap (assoc-set! xmap x 
+                (cons (* 3 (length xmap)) (iota 3 (* 3 (length xmap)) 1))))))
               lis)))
 
 ;;; get internal key (index) from user supplied node id
 (define x-get
   (lambda (key)
     (car (assoc-ref xmap key))))
+
+;;; Extraction of slice (m p h) for given node from xmap
+(define slice
+  (lambda (key)
+    (cdr (assq-ref xmap key))))
 
 ;;; get numbered X node
 (define X_i
@@ -50,9 +51,9 @@
         [(string=? param "h") (set! i 2)])
         (string-append "X[" (number->string (+ i node)) "]"))))
 
-(include "scm-scr/bcs.scm")
-(include "scm-scr/valve.scm")
-(include "scm-scr/header.scm")
+(include "scm-scr/bcs-inject.scm")
+(include "scm-scr/valve-inject.scm")
+(include "scm-scr/header-inject.scm")
 
 (include "def.scm") 
 
