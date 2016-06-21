@@ -44,18 +44,40 @@
 ;;; get numbered X node
 (define X_i
   (lambda (node param)
-    (let ((i 0))
-      (cond 
-        [(string=? param "m") (set! i 0)]
-        [(string=? param "p") (set! i 1)]
-        [(string=? param "h") (set! i 2)])
-        (string-append "X[" (number->string (+ i node)) "]"))))
+      (let ([entry #f])
+        (cond 
+        [(string=? param "m") (set! entry (car (slice node)))]
+        [(string=? param "p") (set! entry (cadr (slice node)))]
+        [(string=? param "h") (set! entry (caddr (slice node)))])
+      (if (integer? entry) 
+      (string-append "X[" (number->string entry) "]") 
+      entry) )))
 
-(include "scm-scr/bcs-inject.scm")
-(include "scm-scr/valve-inject.scm")
-(include "scm-scr/header-inject.scm")
+(define bcs/cc #f)
+
+;(define model
+;  (lambda (name)
+;    (call/cc (lambda (k) (set! bcs/cc k)))))
+;
+(include "scripts/bcs-inject.scm")
+;(include "scripts/bcs.scm")
+(include "scripts/valve-inject.scm")
+(include "scripts/header-inject.scm")
 
 (include "def.scm") 
+
+; reset eqns and call continuations
+;(set! eqns '())
+;(set! J '())
+;(set! xmap '())
+;(bcs/cc)
+
+(newline)
+(write eqns)
+(newline)
+(newline)
+(write xmap)
+(newline)
 
 ;;; Outputs system of eqns
 (let* ([filename "model_fdf.h"]

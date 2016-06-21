@@ -12,14 +12,14 @@
           (cond
             [(string=? x "m") 
                 (string-append 
-                  (X_i (x-get node) "m") "-" (paramptr x (/ (x-get node) 3)))]
+                  (X_i node "m") "-" (paramptr x (/ (x-get node) 3)))]
             [(string=? x "p") 
                 (string-append
-                  (X_i (x-get node) "p") "-" (paramptr x (/ (x-get node) 3)))]
+                  (X_i node "p") "-" (paramptr x (/ (x-get node) 3)))]
             [(string=? x "t") 
                 (string-append 
-                  (X_i (x-get node) "h") "-"
-                  "h_pT(&"  (X_i (x-get node) "p") ",&"
+                  (X_i node "h") "-"
+                  "h_pT(&"  (X_i node "p") ",&"
                   (paramptr x (/ (x-get node) 3)) ")")]))
         (cdr blist))))
 
