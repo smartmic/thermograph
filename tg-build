@@ -1,0 +1,29 @@
+#!/usr/bin/guile -s 
+!#
+;;;coding:utf-8
+
+;;; Use UTF-8 
+(setlocale LC_ALL "")
+(use-modules (ice-9 regex))
+(use-modules (srfi srfi-1))
+
+(load "scripts/utils.scm")
+;(define bcs/cc #f)
+
+;(define model
+;  (lambda (name)
+;    (call/cc (lambda (k) (set! bcs/cc k)))))
+;
+(load "scripts/bcs-inject.scm")
+;(load "scripts/bcs.scm")
+(load "scripts/valve-inject.scm")
+(load "scripts/header-inject.scm")
+
+(load "def.scm") 
+
+
+(load "scripts/to-header.scm")
+(load "scripts/to-thermograph.scm")
+(load "scripts/to-model-f.scm")
+(load "scripts/to-model-df.scm")
+(load "scripts/to-model-fdf.scm")

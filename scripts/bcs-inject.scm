@@ -36,6 +36,7 @@
   (lambda (blist) 
     (let* ([ node (car blist) ] )
       (map (lambda (x) (set! x (symbol->string x))
+             (set! nbcs (+ 1 nbcs))
              (cond
                [(string=? x "m")
                 ; local decrement of current slice
