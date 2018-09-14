@@ -40,7 +40,7 @@ inflow conditions are known. The final result shall be the temperature
 (and enthalpy) of the mixed flow. A visual representation of this
 situation looks like this: 
 
-.. image:: _static/docs/ex1.png
+.. image:: docs/ex1.png
 
 
 The green parameters are known and must be provided as boundary conditions
