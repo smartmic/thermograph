@@ -1,0 +1,18 @@
+.PS
+.fam H
+.defcolor dg rgb 0.1 0.5 0.2
+arrow 1.5 "\m[dg]30 bar" "274 kg/s" "40.5 degC\m[]" "172.3 kJ/kWh"
+move up 0.25
+line down 0.5 then right 1 up 0.5 then down 0.5 then left 1 up 0.5
+"valve" ljust 
+move down 0.25 right 1.0
+arrow 1.5 "28.6 bar" "\m[dg]274 kg/s" "40.53 degC\m[]" "172.3 kJ/kWh" 
+circle rad 0.4 "header" "mixer"
+move to last arrow .start; move down 0.8
+line right 1.5 "28.6 bar" "\m[dg]28.5 kg/s" "70.7 degC\m[]" "298.3 kJ/kWh" 
+arrow to last circle .w
+arrow right 1.5 from last circle .e "28.6 bar" "302.5 kg/s" "\m[red]43.38 degC\m[]" "184.15 kJ/kWh" 
+move to last circle .e
+line down 0.8 from last circle .e
+arrow right 1.5 "28.6 bar" "302.5 kg/s" "\m[red]43.38 degC\m[]" "184.15 kJ/kWh" 
+.PE
